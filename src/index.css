@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+/* === 글로벌 스타일 === */
+/* Antigravity Design System: 뉴모픽 카드 + 소프트 디퓨즈 섀도우 + 에어리한 느낌 */
+
+@font-face {
+  font-family: 'GCFont';
+  src: url('/fonts/GC110.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'GCFont';
+  src: url('/fonts/GC120.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'GCFont';
+  src: url('/fonts/GC130.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'GCFont';
+  src: url('/fonts/GC140.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'GCFont';
+  src: url('/fonts/GC150.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+:root {
+  --color-accent: #E8603C;
+  --color-accent-hover: #d4522f;
+  --color-bg: #F0F2F5;
+  --color-card: #FFFFFF;
+  --color-text: #1a1a2e;
+  --color-text-secondary: #6b7280;
+  --color-border: #e5e7eb;
+  --shadow-neu: 8px 8px 20px rgba(0,0,0,0.06), -4px -4px 12px rgba(255,255,255,0.8);
+  --shadow-neu-sm: 4px 4px 10px rgba(0,0,0,0.04), -2px -2px 6px rgba(255,255,255,0.7);
+  --shadow-neu-inset: inset 2px 2px 4px rgba(0,0,0,0.04), inset -2px -2px 4px rgba(255,255,255,0.7);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  display: flex;
+  justify-content: center;
+  background-color: var(--color-bg);
+}
+
+body {
+  font-family: 'GCFont', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  zoom: 0.9;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* === Antigravity 뉴모픽 카드 유틸리티 === */
+.neu-card {
+  background: var(--color-card);
+  border-radius: 16px;
+  box-shadow: var(--shadow-neu);
+  border: 1px solid rgba(255,255,255,0.6);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.neu-card:hover {
+  box-shadow: 10px 10px 24px rgba(0,0,0,0.08), -5px -5px 14px rgba(255,255,255,0.9);
+  transform: translateY(-1px);
+}
+
+.neu-card-flat {
+  background: var(--color-card);
+  border-radius: 16px;
+  box-shadow: var(--shadow-neu-sm);
+  border: 1px solid rgba(255,255,255,0.5);
+}
+
+.neu-inset {
+  box-shadow: var(--shadow-neu-inset);
+}
+
+/* 커스텀 스크롤바 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* 부드러운 전환 효과 */
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 10px 10px 24px rgba(0,0,0,0.08), -5px -5px 14px rgba(255,255,255,0.9);
+}
+
+/* 상태 뱃지 애니메이션 */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.status-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* 슬라이드 패널 애니메이션 */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.slide-panel {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+/* 페이드 인 */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+/* 어센트 버튼 */
+.btn-accent {
+  background-color: var(--color-accent);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(232, 96, 60, 0.3);
+}
+
+.btn-accent:hover {
+  background-color: var(--color-accent-hover);
+  box-shadow: 0 6px 20px rgba(232, 96, 60, 0.4);
+  transform: translateY(-1px);
+}
