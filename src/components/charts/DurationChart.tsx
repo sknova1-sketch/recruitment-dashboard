@@ -1,8 +1,8 @@
 // === 평균 채용 소요기간 차트 (직군별) ===
-// BCG/맥킨지 스타일: 넉넉한 패딩, 여유있는 차트 높이
+// BCG/맥킨지 스타일: 넓녁한 패딩, 여유있는 차트 높이
 
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import { DurationData } from '../../types';
 
