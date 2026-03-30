@@ -104,7 +104,6 @@ export default function PositionTable({ title = '포지션 리스트', subtitle,
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-<<<<<<< HEAD
             {positions.map((pos) => {
               const progress = getStageProgress(pos.current_stage);
               const rowBg = getRowBg(pos.status_flag, isClosed);
@@ -157,74 +156,6 @@ export default function PositionTable({ title = '포지션 리스트', subtitle,
                 </tr>
               );
             })}
-=======
-            {positions.map((pos) => (
-              <tr
-                key={pos.id}
-                onClick={() => onSelectPosition(pos)}
-                className={`cursor-pointer transition-colors group ${isClosed ? 'bg-gray-50/50 hover:bg-gray-100/50 opacity-80' : 'hover:bg-gray-50/60'}`}
-              >
-                {/* 회사 */}
-                <td className="px-5 py-5 text-center">
-                  <span className={`
-                    inline-block px-2.5 py-1 rounded-lg border text-[10px] font-semibold uppercase tracking-tight
-                    ${pos.company === 'GC케어' 
-                      ? (isClosed ? 'border-gray-200 bg-gray-100 text-gray-500' : 'border-blue-100 bg-blue-50/50 text-blue-600')
-                      : (isClosed ? 'border-gray-200 bg-gray-100 text-gray-500' : 'border-gray-200 bg-gray-50/50 text-gray-500')}
-                  `}>
-                    {pos.company === 'GC케어' ? 'CARE' : 'MEDIAI'}
-                  </span>
-                </td>
-
-                {/* 팀/본부 */}
-                <td className="px-5 py-5">
-                  <span className="block font-semibold text-[13px] text-gray-800">{pos.team}</span>
-                  <span className="text-gray-400 text-[11px] font-medium mt-0.5 block">{pos.department}</span>
-                </td>
-
-                {/* 포지션명 */}
-                <td className={`px-5 py-5 font-semibold transition-colors text-[14px] ${isClosed ? 'text-gray-600' : 'text-gray-900 group-hover:text-[#E8603C]'}`}>
-                  {pos.position_title}
-                </td>
-
-                {/* 채용형태 */}
-                <td className="px-4 py-5 text-center text-gray-500 font-medium text-[13px]">{pos.employment_type}</td>
-
-                {/* 인원 */}
-                <td className={`px-4 py-5 text-center font-semibold ${isClosed ? 'text-gray-500' : 'text-gray-900'}`}>{pos.headcount}</td>
-
-                {/* 현재 단계 */}
-                <td className="px-4 py-5 text-center">
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[12px] font-medium ${
-                    isClosed ? 'bg-emerald-50 text-emerald-600' : 
-                    pos.current_stage === '1차면접' ? 'bg-orange-50 text-orange-600' : 
-                    pos.current_stage === '2차면접' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-600'
-                  }`}>
-                    {pos.current_stage}
-                  </span>
-                </td>
-
-                {/* 오픈일 / 완료일 대체 */}
-                <td className="px-4 py-5 text-center text-gray-400 font-medium text-[12px]">{formatDate(pos.open_date).replace('2024년 ', '')}</td>
-
-                {/* 경과일 */}
-                <td className="px-4 py-5 text-center">
-                  <span className={`font-semibold text-[13px] ${isClosed ? 'text-gray-400' : pos.total_elapsed_days > pos.target_days ? 'text-red-500' : 'text-gray-900'}`}>{pos.total_elapsed_days}일</span>
-                  {!isClosed && <span className="text-gray-300 text-[12px] font-medium ml-1">/ {pos.target_days}</span>}
-                </td>
-
-                {/* 상세보기 */}
-                <td className="px-4 py-5 text-center">
-                  <button
-                    className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-all ${isClosed ? 'text-gray-300 group-hover:bg-gray-200 group-hover:text-gray-500' : 'group-hover:bg-[#E8603C] text-gray-300 group-hover:text-white'}`}
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-
->>>>>>> 84f8f2b (fix: resolve TypeScript build errors & update AdminModal)
             {positions.length === 0 && (
               <tr>
                 <td colSpan={10} className="px-8 py-24 text-center bg-gray-50/30">

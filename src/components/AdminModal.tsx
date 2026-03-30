@@ -162,7 +162,7 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
                       <div className="grid grid-cols-3 gap-3">
                         {(['fulltime', 'contract', 'intern'] as const).map((field) => (
                           <div key={field} className="space-y-1">
-                            <label className="text-[11px] text-gray-400 font-medium">{field === 'fulltime' ? '정규직' : field === 'contract' ? '계약직' : '인턴'}|/label>
+                            <label className="text-[11px] text-gray-400 font-medium">{field === 'fulltime' ? '정규직' : field === 'contract' ? '계약직' : '인턴'}</label>
                             <input type="number" min={0} value={editStats[company][field]}
                               onChange={(e) => updateStatsField(company, field, parseInt(e.target.value) || 0)}
                               className="w-full px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-[14px] font-semibold text-gray-900 outline-none focus:border-gray-400 transition-colors text-center" />
