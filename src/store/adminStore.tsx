@@ -34,7 +34,7 @@ interface AdminState {
 const ADMIN_PASSWORD = '1111';
 
 function sortPositions(positions: Position[]): Position[] {
-  return [...positions].sort((a, b) => {
+  return [...positions].sort((a: Position, b: Position) => {
     if (a.company !== b.company) return a.company.localeCompare(b.company);
     const dateA = a.open_date || '9999-12-31';
     const dateB = b.open_date || '9999-12-31';
@@ -59,50 +59,39 @@ export const useAdmin = create<AdminState>()(
       sortedPositions: [],
       favorites: new Set<string>(),
       dashboardSearch: '',
-      setDashboardSearch: (s) => set({ dashboardSearch: s }),
+      setDashboardSearch: (s: string) => set({ dashboardSearch: s }),
 
       fetchSupabaseData: async () => {
         try {
           const { data: posData, error: posError } = await supabase.from('positions').select('*');
           if (posError) throw posError;
-          const enhancedPositions = (posData || []).map(p => ({
+          const enhancedPositions = (posData || []).map((p: Position) => ({
             ...p,
             total_elapsed_days: calculateElapsedDays(p.open_date, p.completion_date)
           }));
           const { data: statData, error: statError } = await supabase.from('hiring_stats').select('settings_json').eq('id', 1).single();
           if (statError && statError.code !== 'PGRST116') throw statError;
-          set({ 
-            positions: enhancedPositions, 
-            sortedPositions: sortPositions(enhancedPositions),
-            hiringStats: statData ? statData.settings_json : emptyHiringStats
-          });
-        } catch (error) {
-          console.error('fetch error:', error);
-        }
+          set({ positions: enhancedPositions, sortedPositions: sortPositions(enhancedPositions),
+            hiringStats: statData ? statData.settings_json : emptyHiringStats });
+        } catch (error) { console.error('fetch error:', error); }
       },
 
-      updateHiringStats: async (stats) => {
+      updateHiringStats: async (stats: HiringStats) => {
         try {
           const { error } = await supabase.from('hiring_stats').upsert({ id: 1, settings_json: stats });
           if (error) throw error;
           set({ hiringStats: stats });
-        } catch (error) {
-          console.error('updateHiringStats error:', error);
-          alert('save failed');
-        }
+        } catch (error) { console.error('update stats error:', error); alert('save failed'); }
       },
 
-      login: (password) => {
-        if (password === ADMIN_PASSWORD) {
-          set({ isAuthenticated: true });
-          return true;
-        }
+      login: (password: string) => {
+        if (password === ADMIN_PASSWORD) { set({ isAuthenticated: true }); return true; }
         return false;
       },
 
       logout: () => set({ isAuthenticated: false }),
 
-      addPosition: async (pos) => {
+      addPosition: async (pos: Position) => {
         try {
           const { error } = await supabase.from('positions').insert({
             id: pos.id, company: pos.company, team: pos.team,
@@ -115,29 +104,26 @@ export const useAdmin = create<AdminState>()(
           });
           if (error) throw error;
           const posWithDays = { ...pos, total_elapsed_days: calculateElapsedDays(pos.open_date, pos.completion_date) };
-          set((state) => {
+          set((state: AdminState) => {
             const updated = [...state.positions, posWithDays];
             return { positions: updated, sortedPositions: sortPositions(updated) };
           });
-        } catch (error) {
-          console.error('addPosition error:', error);
-          alert('add failed');
-        }
+        } catch (error) { console.error('add error:', error); alert('add failed'); }
       },
 
-      updatePosition: async (id, partial) => {
+      updatePosition: async (id: string, partial: Partial<Position>) => {
         try {
           const dbColumns = ['company','team','department','position_title','employment_type',
             'headcount','current_stage','open_date','completion_date','is_active',
             'job_family','target_days','days_in_stage'];
-          const dbPayload: any = {};
+          const dbPayload: Record<string, unknown> = {};
           for (const key of dbColumns) {
-            if (key in partial) dbPayload[key] = (partial as any)[key];
+            if (key in partial) dbPayload[key] = (partial as Record<string, unknown>)[key];
           }
           const { error } = await supabase.from('positions').update(dbPayload).eq('id', id);
           if (error) throw error;
-          set((state) => {
-            const updated = state.positions.map(p => {
+          set((state: AdminState) => {
+            const updated = state.positions.map((p: Position) => {
               if (p.id === id) {
                 const newP = { ...p, ...partial };
                 newP.total_elapsed_days = calculateElapsedDays(newP.open_date, newP.completion_date);
@@ -147,29 +133,23 @@ export const useAdmin = create<AdminState>()(
             });
             return { positions: updated, sortedPositions: sortPositions(updated) };
           });
-        } catch (error) {
-          console.error('updatePosition error:', error);
-          alert('update failed');
-        }
+        } catch (error) { console.error('update error:', error); alert('update failed'); }
       },
 
-      deletePosition: async (id) => {
+      deletePosition: async (id: string) => {
         try {
           const { error } = await supabase.from('positions').delete().eq('id', id);
           if (error) throw error;
-          set((state) => {
-            const updated = state.positions.filter(p => p.id !== id);
-            const nextFavorites = new Set(state.favorites);
-            nextFavorites.delete(id);
-            return { positions: updated, sortedPositions: sortPositions(updated), favorites: nextFavorites };
+          set((state: AdminState) => {
+            const updated = state.positions.filter((p: Position) => p.id !== id);
+            const nextFav = new Set(state.favorites);
+            nextFav.delete(id);
+            return { positions: updated, sortedPositions: sortPositions(updated), favorites: nextFav };
           });
-        } catch (error) {
-          console.error('deletePosition error:', error);
-          alert('delete failed');
-        }
+        } catch (error) { console.error('delete error:', error); alert('delete failed'); }
       },
 
-      toggleFavorite: (id) => set((state) => {
+      toggleFavorite: (id: string) => set((state: AdminState) => {
         const next = new Set(state.favorites);
         if (next.has(id)) next.delete(id);
         else next.add(id);
@@ -178,19 +158,19 @@ export const useAdmin = create<AdminState>()(
     }),
     {
       name: 'recruitment-admin-storage',
-      partialize: (state) => ({
+      partialize: (state: AdminState) => ({
         favorites: Array.from(state.favorites),
         hiringStats: state.hiringStats,
         positions: state.positions
       }),
-      merge: (persistedState: any, currentState) => {
-        const mergedPositions = persistedState?.positions || currentState.positions;
+      merge: (persistedState: Partial<AdminState>, currentState: AdminState) => {
+        const mergedPositions = (persistedState as any)?.positions || currentState.positions;
         return {
           ...currentState,
           ...persistedState,
           positions: mergedPositions,
           sortedPositions: sortPositions(mergedPositions),
-          favorites: new Set(persistedState?.favorites || []),
+          favorites: new Set((persistedState as any)?.favorites || []),
         };
       },
     }
