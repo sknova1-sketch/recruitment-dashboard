@@ -1,7 +1,7 @@
 // === 채용 운영 대시보드 메인 페이지 ===
 // 동적 포지션 + 정렬(회사→오픈일→본부→팀) + High Focus Position
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Position } from '../types';
 import { useFilter } from '../hooks/useFilter';
 import { calculateKPI } from '../utils/utils';
@@ -24,14 +24,28 @@ interface DashboardProps {
 
 export default function Dashboard({ currentPage, onNavigate }: DashboardProps) {
   // 정렬된 포지션 사용 (회사→오픈일→본부→팀)
-  const { sortedPositions, favorites } = useAdmin();
+  const { sortedPositions, favorites, dashboardSearch, setDashboardSearch } = useAdmin();
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
 
   const {
     filter,
     filteredPositions,
+    allFilteredPositions,
     setSearch,
+    setCompany,
   } = useFilter(sortedPositions);
+
+  // 화면 진입 시 전역 상태에 검색어가 있다면 필터에 복원
+  useEffect(() => {
+    if (dashboardSearch && filter.search === '') {
+      setSearch(dashboardSearch);
+    }
+  }, []);
+
+  const handleSearch = (v: string) => {
+    setSearch(v);
+    setDashboardSearch(v); // 전역 스토어에 동시 업데이트
+  };
 
   // KPI는 전체 포지션 기준
   const kpi = useMemo(() => calculateKPI(sortedPositions), [sortedPositions]);
@@ -44,8 +58,8 @@ export default function Dashboard({ currentPage, onNavigate }: DashboardProps) {
 
   // 퍼널 차트용 데이터
   const funnelData = useMemo(() => {
-    const active = filteredPositions.filter(p => p.is_active);
-    const order = ['접수', '서류검토', '1차면접', '2차면접', '최종면접', '처우협의', '입사확정'];
+    const active = filteredPositions.filter(p => p.is_active && p.current_stage !== '채용완료');
+    const order = ['접수', '서류검토', '1차면접', '2차면접', '처우협의', '입사확정'];
     return order.map(stage => {
       const stagePos = active.filter(p => p.current_stage === stage);
       const count = stagePos.length;
@@ -58,7 +72,7 @@ export default function Dashboard({ currentPage, onNavigate }: DashboardProps) {
     <div className="min-h-screen bg-[#F0F2F5] flex flex-col items-center w-full overflow-x-hidden">
       <div className="w-full max-w-[1500px]">
         <Header 
-          onSearch={setSearch} 
+          onSearch={handleSearch} 
           searchValue={filter.search} 
           currentPage={currentPage}
           onNavigate={onNavigate}
@@ -66,19 +80,34 @@ export default function Dashboard({ currentPage, onNavigate }: DashboardProps) {
       </div>
 
       <main className="w-full max-w-[1500px] px-6 pb-10 flex flex-col gap-5">
-        {/* Row 1: 환영 메시지 */}
-        <section className="fade-in px-2 mt-2">
-          <h2 className="text-[26px] font-bold text-gray-900 tracking-tight leading-tight">
-            안녕하세요, 채용 현황을 공유해드릴게요
-          </h2>
-          <p className="text-[13px] text-gray-400 font-medium mt-1">
-            (Hello, let us share the recruitment status with you.)
-          </p>
+        {/* Row 1: 환영 메시지 + 빠른 요약 */}
+        <section className="fade-in px-2 mt-2 flex items-center justify-between">
+          <div>
+            <h2 className="text-[22px] font-bold text-gray-900 tracking-tight leading-tight">
+              채용 현황을 공유해드릴게요
+            </h2>
+            <p className="text-[12px] text-gray-400 font-medium mt-0.5">
+              {(() => {
+                const today = new Date();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                return `${today.getFullYear()}년 ${mm}월 ${dd}일 기준`;
+              })()}
+              &nbsp;·&nbsp;총 <strong className="text-gray-700">{kpi.totalActive}</strong>건 진행
+              {kpi.delayedCount > 0 && (
+                <> &nbsp;·&nbsp; <span className="text-red-500 font-semibold">⚠ 지연 {kpi.delayedCount}건</span></>
+              )}
+            </p>
+          </div>
         </section>
 
         {/* Row 2: KPI 카드 */}
         <section className="fade-in" style={{ animationDelay: '0.05s' }}>
-          <KPICards kpi={kpi} />
+          <KPICards 
+            kpi={kpi} 
+            onCardClick={setCompany}
+            selectedCompany={filter.company}
+          />
         </section>
 
         {/* Row 3: 퍼널 (2/3) + 사이드패널 (1/3) */}
@@ -101,15 +130,33 @@ export default function Dashboard({ currentPage, onNavigate }: DashboardProps) {
           </section>
         )}
 
-        {/* Row 5: 전체 포지션 리스트 (정렬 적용) */}
+        {/* Row 5: 활성 포지션 리스트 (정렬 적용) */}
         <section className="fade-in" style={{ animationDelay: '0.15s' }}>
           <PositionTable
-            positions={filteredPositions}
+            title="진행 중인 포지션"
+            positions={filteredPositions.filter(p => p.current_stage !== '입사확정' && p.current_stage !== '채용완료')}
             onSelectPosition={setSelectedPosition}
           />
-          <br />
-          <Footer />
         </section>
+
+        {/* Row 6: 채용 완료된 포지션 (완료일/오픈일 기준 정렬) */}
+        {allFilteredPositions.some(p => p.current_stage === '입사확정' || p.current_stage === '채용완료') && (
+          <section className="fade-in" style={{ animationDelay: '0.2s', marginTop: '10px' }}>
+            <PositionTable
+              title="채용 완료(Closed)"
+              isClosed={true}
+              positions={
+                allFilteredPositions
+                  .filter(p => p.current_stage === '입사확정' || p.current_stage === '채용완료')
+                  .sort((a, b) => (b.open_date || '').localeCompare(a.open_date || ''))
+              }
+              onSelectPosition={setSelectedPosition}
+            />
+          </section>
+        )}
+
+        <br />
+        <Footer />
       </main>
 
       <PositionDetailPanel
