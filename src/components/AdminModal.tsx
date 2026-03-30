@@ -150,6 +150,16 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
               <button onClick={() => { logout(); onClose(); }} className="flex items-center gap-1.5 text-[12px] text-gray-400 hover:text-red-500 transition-colors self-center">
                 <LogOut className="w-3.5 h-3.5" /> 로그아웃
               </button>
+              <button 
+                onClick={() => {
+                   if (confirm("현재 DB에 있는 모든 데이터를 삭제하고, 방금 업로드한 엑셀(mock data) 데이터로 강제 동기화하시겠습니까?")) {
+                      useAdmin.getState().syncWithExcelData();
+                   }
+                }} 
+                className="flex items-center gap-1.5 text-[10px] px-2 py-1 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors self-center font-bold"
+              >
+                <Plus className="w-3 h-3 rotate-45" /> DB 데이터 갱신 (엑셀 기준)
+              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-5">

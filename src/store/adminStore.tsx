@@ -27,7 +27,8 @@ interface AdminState {
   favorites: Set<string>;
   toggleFavorite: (id: string) => void;
   sortedPositions: Position[];
-  fetchSupabaseData: () => Promise<void>; // 데이터 통신 시작점 추가
+  fetchSupabaseData: () => Promise<void>;
+  syncWithExcelData: () => Promise<void>; // 엑셀 데이터 강제 동기화 추가
   dashboardSearch: string;
   setDashboardSearch: (s: string) => void;
 }
@@ -104,6 +105,47 @@ export const useAdmin = create<AdminState>()(
           });
         } catch (error) {
           console.error("데이터 초기화 중 에러 발생:", error);
+        }
+      },
+
+      // 엑셀 데이터(initialPositions)를 DB에 강제로 입히는 기능
+      syncWithExcelData: async () => {
+        try {
+          if (!confirm("현재 DB의 모든 포지션 데이터를 엑셀 데이터로 덮어씌우시겠습니까?")) return;
+          
+          // 1. 기존 데이터 삭제 (ID 기준 혹은 전체 삭제 후 재삽입)
+          // 여기서는 단순하게 전체 삭제 후 재삽입 시도
+          const { error: delError } = await supabase.from('positions').delete().neq('id', '---'); 
+          if (delError) throw delError;
+
+          // 2. 엑셀 데이터 삽입
+          const { error: insError } = await supabase.from('positions').insert(initialPositions.map(p => ({
+            id: p.id,
+            company: p.company,
+            team: p.team,
+            department: p.department,
+            position_title: p.position_title,
+            employment_type: p.employment_type,
+            headcount: p.headcount,
+            current_stage: p.current_stage,
+            open_date: p.open_date,
+            completion_date: p.completion_date,
+            is_active: p.is_active,
+            job_family: p.job_family,
+            target_days: p.target_days,
+            days_in_stage: p.days_in_stage
+          })));
+          if (insError) throw insError;
+
+          // 3. 통계 데이터도 재계산하여 업서트
+          const newStats = calculateStatsFromPositions(initialPositions);
+          await supabase.from('hiring_stats').upsert({ id: 1, settings_json: newStats });
+
+          alert("동기화 완료! 페이지를 새로고침 하세요.");
+          window.location.reload();
+        } catch (error) {
+          console.error("동기화 에러:", error);
+          alert("동기화 실패: " + (error as any).message);
         }
       },
 
