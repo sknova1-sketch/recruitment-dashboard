@@ -71,3 +71,6 @@ export default defineConfig([
   },
 ])
 ```
+
+
+<!-- UI 업데이트: 2026-03-30 -->
