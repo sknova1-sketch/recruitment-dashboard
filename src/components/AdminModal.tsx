@@ -331,7 +331,7 @@ function PositionForm({ initial, onSave, onCancel }: {
         jd_status: '미작성' as const,
         posting_url: '',
         jd_url: '',
-        is_active: (stage !== '채용완료'),
+        is_active: (stage !== '채용완료' && stage !== '입사확정'),
         update_logs: [],
       }),
       company,
@@ -342,8 +342,8 @@ function PositionForm({ initial, onSave, onCancel }: {
       headcount,
       current_stage: stage,
       open_date: openDate,
-      completion_date: (stage === '채용완료') ? completionDate : null,
-      is_active: (stage !== '채용완료'),
+      completion_date: (stage === '채용완료' || stage === '입사확정') ? completionDate : null,
+      is_active: (stage !== '채용완료' && stage !== '입사확정'),
     };
     onSave(data);
   };
@@ -412,7 +412,7 @@ function PositionForm({ initial, onSave, onCancel }: {
         </div>
       </div>
 
-      {(stage === '채용완료') && (
+      {(stage === '채용완료' || stage === '입사확정') && (
         <div className="pt-1 border-t border-gray-200/50 mt-2">
           <label className="text-[11px] text-[#E8603C] font-bold mb-1 block">확정일자 (입사/종료일)</label>
           <input type="date" value={completionDate} onChange={(e) => setCompletionDate(e.target.value)} className={`${inputClass} !border-[#E8603C]/30 !bg-orange-50/30`} />

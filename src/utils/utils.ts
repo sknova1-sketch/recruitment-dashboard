@@ -27,9 +27,9 @@ export const calculateKPI = (positions: Position[]): KPIData => {
   const gcCare = active.filter(p => p.company === 'GC케어');
   const gcMediai = active.filter(p => p.company === 'GC메디아이');
 
-  // 평균 채용 소요기간 (활성 포지션 기준)
-  const avgElapsedDays = active.length > 0
-    ? Math.round(active.reduce((sum, p) => sum + p.total_elapsed_days, 0) / active.length)
+  // 평균 채용 소요기간 (활성 + 완료된 모든 포지션 기준)
+  const avgElapsedDays = positions.length > 0
+    ? Math.round(positions.reduce((sum, p) => sum + (p.total_elapsed_days || 0), 0) / positions.length)
     : 0;
 
   // 지연 포지션 수
