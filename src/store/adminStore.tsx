@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { Position, Company, StageType, JDStatus } from '../types';
 import { supabase } from '../utils/supabase';
 import { calculateElapsedDays } from '../utils/utils';
+import { positions as initialPositions } from '../data/mockData';
 
 export interface HiringStats {
   gcCare: { fulltime: number; contract: number; intern: number; total: number };
@@ -45,7 +46,30 @@ function sortPositions(positions: Position[]): Position[] {
   });
 }
 
-// 초기 빈 데이터 세팅 (로딩 딜레이 대비)
+// 포지션 데이터를 기반으로 통계 계산
+function calculateStatsFromPositions(positions: Position[]): HiringStats {
+  const stats: HiringStats = {
+    gcCare: { fulltime: 0, contract: 0, intern: 0, total: 0 },
+    gcMediai: { fulltime: 0, contract: 0, intern: 0, total: 0 },
+    totalFulltime: 0, totalContract: 0, totalIntern: 0, grandTotal: 0,
+  };
+
+  positions.forEach(p => {
+    if (!p.is_active) return; // 활성 포지션만 통계에 포함
+    const companyKey = p.company === 'GC케어' ? 'gcCare' : 'gcMediai';
+    const type = p.employment_type === '정규직' ? 'fulltime' : p.employment_type === '계약직' ? 'contract' : 'intern';
+    
+    stats[companyKey][type] += p.headcount;
+    stats[companyKey].total += p.headcount;
+    if (type === 'fulltime') stats.totalFulltime += p.headcount;
+    if (type === 'contract') stats.totalContract += p.headcount;
+    if (type === 'intern') stats.totalIntern += p.headcount;
+    stats.grandTotal += p.headcount;
+  });
+
+  return stats;
+}
+
 const emptyHiringStats: HiringStats = {
   gcCare: { fulltime: 0, contract: 0, intern: 0, total: 0 },
   gcMediai: { fulltime: 0, contract: 0, intern: 0, total: 0 },
@@ -55,10 +79,10 @@ const emptyHiringStats: HiringStats = {
 export const useAdmin = create<AdminState>()(
   persist(
     (set) => ({
-      hiringStats: emptyHiringStats, // 최초 로드 시 빈 데이터 사용 (로컬 캐시 혹은 DB Fetch가 곧바로 덮어씀)
+      hiringStats: calculateStatsFromPositions(initialPositions),
       isAuthenticated: false,
-      positions: [],
-      sortedPositions: [],
+      positions: initialPositions,
+      sortedPositions: sortPositions(initialPositions),
       favorites: new Set<string>(),
       dashboardSearch: '',
       setDashboardSearch: (s) => set({ dashboardSearch: s }),
@@ -79,9 +103,9 @@ export const useAdmin = create<AdminState>()(
           if (statError && statError.code !== 'PGRST116') throw statError; // PGRST116: no rows
 
           set({ 
-            positions: enhancedPositions, 
-            sortedPositions: sortPositions(enhancedPositions),
-            hiringStats: statData ? statData.settings_json : emptyHiringStats
+            positions: enhancedPositions.length > 0 ? enhancedPositions : initialPositions, 
+            sortedPositions: sortPositions(enhancedPositions.length > 0 ? enhancedPositions : initialPositions),
+            hiringStats: statData ? statData.settings_json : (enhancedPositions.length > 0 ? calculateStatsFromPositions(enhancedPositions) : calculateStatsFromPositions(initialPositions))
           });
         } catch (error) {
           console.error("데이터 초기화 중 에러 발생:", error);
