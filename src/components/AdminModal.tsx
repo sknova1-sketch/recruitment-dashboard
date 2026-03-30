@@ -11,7 +11,7 @@ interface AdminModalProps {
   onClose: () => void;
 }
 
-type Tab = 'hiring' | 'positions';
+type Tab = 'hiring' | 'positions' | 'closed';
 
 export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
   const { hiringStats, updateHiringStats, isAuthenticated, login, logout, sortedPositions, addPosition, updatePosition, deletePosition, favorites, toggleFavorite } = useAdmin();
@@ -123,15 +123,28 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
           </div>
         ) : (
           <>
-            {/* 탭 헤더 */}
-            <div className="flex border-b border-gray-100 px-5 flex-shrink-0">
+            {/* 탭 헤더 (텍스트형 -> 녹색 둥근 버튼형으로 개선) */}
+            <div className="flex border-b border-gray-100 px-5 py-3 flex-shrink-0 gap-3">
               <button onClick={() => setTab('positions')}
-                className={`px-4 py-3 text-[13px] font-semibold border-b-2 transition-colors ${tab === 'positions' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
-                포지션 관리
+                className={`px-4 py-2 text-[13px] font-bold rounded-full transition-all duration-300 ${
+                  tab === 'positions' 
+                    ? 'bg-white text-emerald-700 shadow-[0_0_12px_rgba(16,185,129,0.25)] ring-1 ring-emerald-300' 
+                    : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}>
+                포지션 현황
+              </button>
+              <button onClick={() => setTab('closed')}
+                className={`px-4 py-2 text-[13px] font-bold rounded-full transition-all duration-300 ${
+                  tab === 'closed' 
+                    ? 'bg-white text-emerald-700 shadow-[0_0_12px_rgba(16,185,129,0.25)] ring-1 ring-emerald-300' 
+                    : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}>
+                채용 완료(Closed)
               </button>
               <button onClick={() => setTab('hiring')}
-                className={`px-4 py-3 text-[13px] font-semibold border-b-2 transition-colors ${tab === 'hiring' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
-                채용 현황
+                className={`px-4 py-2 text-[13px] font-bold rounded-full transition-all duration-300 ${
+                  tab === 'hiring' 
+                    ? 'bg-white text-emerald-700 shadow-[0_0_12px_rgba(16,185,129,0.25)] ring-1 ring-emerald-300' 
+                    : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}>
+                올해 채용 수치표
               </button>
               <div className="flex-1" />
               <button onClick={() => { logout(); onClose(); }} className="flex items-center gap-1.5 text-[12px] text-gray-400 hover:text-red-500 transition-colors self-center">
@@ -149,7 +162,7 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
                       <div className="grid grid-cols-3 gap-3">
                         {(['fulltime', 'contract', 'intern'] as const).map((field) => (
                           <div key={field} className="space-y-1">
-                            <label className="text-[11px] text-gray-400 font-medium">{field === 'fulltime' ? '정규직' : field === 'contract' ? '계약직' : '인턴'}</label>
+                            <label className="text-[11px] text-gray-400 font-medium">{field === 'fulltime' ? '정규직' : field === 'contract' ? '계약직' : '인턴'}|/label>
                             <input type="number" min={0} value={editStats[company][field]}
                               onChange={(e) => updateStatsField(company, field, parseInt(e.target.value) || 0)}
                               className="w-full px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-[14px] font-semibold text-gray-900 outline-none focus:border-gray-400 transition-colors text-center" />
@@ -166,7 +179,9 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
               ) : (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-[14px] font-semibold text-gray-700">활성 포지션 ({sortedPositions.filter(p => p.is_active).length}건)</p>
+                    <p className="text-[14px] font-semibold text-gray-700">
+                      {tab === 'closed' ? '채용 완료(Closed) 포지션' : '현재 진행 중인 활성 포지션'}
+                    </p>
                     <button onClick={() => { setShowAddForm(true); setEditingId(null); }}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-900 text-white text-[12px] font-semibold hover:bg-gray-800 transition-colors">
                       <Plus className="w-3.5 h-3.5" /> 포지션 추가
@@ -175,24 +190,38 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
 
                   {showAddForm && (
                     <PositionForm 
-                      onSave={(pos) => { addPosition(pos); setShowAddForm(false); }}
+                      onSave={(pos) => { 
+                        addPosition(pos); 
+                        setShowAddForm(false); 
+                        if (pos.current_stage === '입사확정' || pos.current_stage === '채용완료') setTab('closed');
+                      }}
                       onCancel={() => setShowAddForm(false)}
                     />
                   )}
 
-                  {sortedPositions.map((pos) => (
+                  {sortedPositions
+                    .filter(pos => tab === 'closed' 
+                      ? (pos.current_stage === '입사확정' || pos.current_stage === '채용완료')
+                      : (pos.current_stage !== '입사확정' && pos.current_stage !== '채용완료'))
+                    // 닫힌 포지션 탭은 최신순 정렬 표시
+                    .sort((a, b) => tab === 'closed' ? (b.open_date || '').localeCompare(a.open_date || '') : 0)
+                    .map((pos) => (
                     <div key={pos.id} className="border border-gray-100 rounded-xl p-4 hover:bg-gray-50/50 transition-colors">
                       {editingId === pos.id ? (
                         <PositionForm
                           initial={pos}
-                          onSave={(updated) => { updatePosition(pos.id, updated); setEditingId(null); }}
+                          onSave={(updated) => { 
+                            updatePosition(pos.id, updated); 
+                            setEditingId(null); 
+                            if (updated.current_stage === '입사확정' || updated.current_stage === '채용완료') setTab('closed');
+                          }}
                           onCancel={() => setEditingId(null)}
                         />
                       ) : deleteConfirmId === pos.id ? (
-                        /* 인라인 삭제 확인 UI (window.confirm 대체) */
+                        /* 인라인 삭제 확인 UI (window.confirm 대체) */ 
                         <div className="flex items-center justify-between bg-red-50 rounded-lg p-3 -m-1">
                           <p className="text-[13px] font-medium text-red-700">
-                            <strong>{pos.position_title}</strong>을(를) 삭제하시겠습니까?
+                            <strong>{pos.position_title}</strong>을(;��) 삭제�瓲*S�V�"�b0?
                           </p>
                           <div className="flex gap-2">
                             <button onClick={() => confirmDelete(pos.id)}
@@ -271,6 +300,8 @@ function PositionForm({ initial, onSave, onCancel }: {
   const [stage, setStage] = useState<StageType>(initial?.current_stage || '접수');
   // 요청 #1: 오픈일 입력/수정 필드 추가
   const [openDate, setOpenDate] = useState(initial?.open_date || new Date().toISOString().split('T')[0]);
+  // 요청: 입사확정일(completion_date) 필드 추가
+  const [completionDate, setCompletionDate] = useState(initial?.completion_date || new Date().toISOString().split('T')[0]);
 
   const handleSubmit = () => {
     if (!team.trim() || !title.trim()) return;
@@ -301,6 +332,7 @@ function PositionForm({ initial, onSave, onCancel }: {
       headcount,
       current_stage: stage,
       open_date: openDate,
+      completion_date: (stage === '채용완료') ? completionDate : null,
     };
     onSave(data);
   };
@@ -369,7 +401,14 @@ function PositionForm({ initial, onSave, onCancel }: {
         </div>
       </div>
 
-      <div className="flex gap-2 pt-1">
+      {(stage === '채용완료') && (
+        <div className="pt-1 border-t border-gray-200/50 mt-2">
+          <label className="text-[11px] text-[#E8603C] font-bold mb-1 block">확정일자 (입사/종료일)</label>
+          <input type="date" value={completionDate} onChange={(e) => setCompletionDate(e.target.value)} className={`${inputClass} !border-[#E8603C]/30 !bg-orange-50/30`} />
+        </div>
+      )}
+
+      <div className="flex gap-2 pt-1 mt-2">
         <button onClick={handleSubmit}
           className="flex-1 py-2.5 rounded-lg bg-gray-900 text-white text-[13px] font-semibold hover:bg-gray-800 flex items-center justify-center gap-1.5">
           <Save className="w-3.5 h-3.5" /> {initial ? '수정 저장' : '추가'}
