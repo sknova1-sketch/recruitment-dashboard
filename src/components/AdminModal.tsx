@@ -331,7 +331,7 @@ function PositionForm({ initial, onSave, onCancel }: {
         jd_status: '미작성' as const,
         posting_url: '',
         jd_url: '',
-        is_active: true,
+        is_active: (stage !== '채용완료'),
         update_logs: [],
       }),
       company,
@@ -343,6 +343,7 @@ function PositionForm({ initial, onSave, onCancel }: {
       current_stage: stage,
       open_date: openDate,
       completion_date: (stage === '채용완료') ? completionDate : null,
+      is_active: (stage !== '채용완료'),
     };
     onSave(data);
   };

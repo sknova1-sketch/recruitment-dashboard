@@ -201,7 +201,10 @@ export const useAdmin = create<AdminState>()(
           const posWithDays = { ...pos, total_elapsed_days: calculateElapsedDays(pos.open_date, pos.completion_date) };
           set((state) => {
             const updated = [...state.positions, posWithDays];
-            return { positions: updated, sortedPositions: sortPositions(updated) };
+            const newStats = calculateStatsFromPositions(updated);
+            // 비동기로 DB에도 통계 업데이트 진행 (await X)
+            supabase.from('hiring_stats').upsert({ id: 1, settings_json: newStats }).then();
+            return { positions: updated, sortedPositions: sortPositions(updated), hiringStats: newStats };
           });
         } catch (error) {
            console.error("포지션 추가 에러:", error);
@@ -236,7 +239,9 @@ export const useAdmin = create<AdminState>()(
                }
                return p;
              });
-             return { positions: updated, sortedPositions: sortPositions(updated) };
+             const newStats = calculateStatsFromPositions(updated);
+             supabase.from('hiring_stats').upsert({ id: 1, settings_json: newStats }).then();
+             return { positions: updated, sortedPositions: sortPositions(updated), hiringStats: newStats };
            });
          } catch (error) {
            console.error("포지션 수정 에러:", error);
@@ -253,10 +258,13 @@ export const useAdmin = create<AdminState>()(
              const updated = state.positions.filter(p => p.id !== id);
              const nextFavorites = new Set(state.favorites);
              nextFavorites.delete(id);
+             const newStats = calculateStatsFromPositions(updated);
+             supabase.from('hiring_stats').upsert({ id: 1, settings_json: newStats }).then();
              return {
                positions: updated,
                sortedPositions: sortPositions(updated),
-               favorites: nextFavorites
+               favorites: nextFavorites,
+               hiringStats: newStats
              };
            });
          } catch (error) {
