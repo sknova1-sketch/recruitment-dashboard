@@ -1,11 +1,9 @@
-// === 관리자 상태 관리 스토어 (확장: 즐겨찾기+정렬) ===
-// 채용현황 + 포지션 CRUD + High Focus 즐겨찾기
-
-import { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react';
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { Position, Company, StageType, JDStatus } from '../types';
-import { positions as defaultPositions } from '../data/mockData';
+import { supabase } from '../utils/supabase';
+import { calculateElapsedDays } from '../utils/utils';
 
-/** 26년 채용 현황 데이터 구조 */
 export interface HiringStats {
   gcCare: { fulltime: number; contract: number; intern: number; total: number };
   gcMediai: { fulltime: number; contract: number; intern: number; total: number };
@@ -17,140 +15,188 @@ export interface HiringStats {
 
 interface AdminState {
   hiringStats: HiringStats;
-  updateHiringStats: (stats: HiringStats) => void;
+  updateHiringStats: (stats: HiringStats) => Promise<void>;
   isAuthenticated: boolean;
   login: (password: string) => boolean;
   logout: () => void;
   positions: Position[];
-  addPosition: (pos: Position) => void;
-  updatePosition: (id: string, pos: Partial<Position>) => void;
-  deletePosition: (id: string) => void;
-  // 즐겨찾기 (High Focus Position)
+  addPosition: (pos: Position) => Promise<void>;
+  updatePosition: (id: string, pos: Partial<Position>) => Promise<void>;
+  deletePosition: (id: string) => Promise<void>;
   favorites: Set<string>;
   toggleFavorite: (id: string) => void;
-  // 정렬된 포지션 (회사→오픈일→본부→팀)
   sortedPositions: Position[];
+  fetchSupabaseData: () => Promise<void>;
+  dashboardSearch: string;
+  setDashboardSearch: (s: string) => void;
 }
 
 const ADMIN_PASSWORD = '1111';
 
-const defaultHiringStats: HiringStats = {
-  gcCare: { fulltime: 10, contract: 4, intern: 1, total: 15 },
-  gcMediai: { fulltime: 9, contract: 0, intern: 0, total: 9 },
-  totalFulltime: 19,
-  totalContract: 4,
-  totalIntern: 1,
-  grandTotal: 24,
-};
-
-/** 포지션 정렬: 회사 → 오픈일(내림차순) → 본부 → 팀 */
 function sortPositions(positions: Position[]): Position[] {
   return [...positions].sort((a, b) => {
-    // 1. 회사 (GC메디아이 → GC케어 순)
     if (a.company !== b.company) return a.company.localeCompare(b.company);
-    // 2. 오픈일 (과거순=오름차순, 즉 경과일 내림차순 효과)
-    if (a.open_date !== b.open_date) return a.open_date.localeCompare(b.open_date);
-    // 3. 본부
+    const dateA = a.open_date || '9999-12-31';
+    const dateB = b.open_date || '9999-12-31';
+    if (dateA !== dateB) return dateA.localeCompare(dateB);
     if (a.department !== b.department) return a.department.localeCompare(b.department);
-    // 4. 팀
     return a.team.localeCompare(b.team);
   });
 }
 
-const AdminContext = createContext<AdminState | undefined>(undefined);
+const emptyHiringStats: HiringStats = {
+  gcCare: { fulltime: 0, contract: 0, intern: 0, total: 0 },
+  gcMediai: { fulltime: 0, contract: 0, intern: 0, total: 0 },
+  totalFulltime: 0, totalContract: 0, totalIntern: 0, grandTotal: 0,
+};
 
-export function AdminProvider({ children }: { children: ReactNode }) {
-  const [hiringStats, setHiringStats] = useState<HiringStats>(() => {
-    const stored = localStorage.getItem('hiringStats');
-    return stored ? JSON.parse(stored) : defaultHiringStats;
-  });
+export const useAdmin = create<AdminState>()(
+  persist(
+    (set) => ({
+      hiringStats: emptyHiringStats,
+      isAuthenticated: false,
+      positions: [],
+      sortedPositions: [],
+      favorites: new Set<string>(),
+      dashboardSearch: '',
+      setDashboardSearch: (s) => set({ dashboardSearch: s }),
 
-  const [positions, setPositions] = useState<Position[]>(() => {
-    const stored = localStorage.getItem('positions');
-    return stored ? JSON.parse(stored) : defaultPositions;
-  });
+      fetchSupabaseData: async () => {
+        try {
+          const { data: posData, error: posError } = await supabase.from('positions').select('*');
+          if (posError) throw posError;
+          const enhancedPositions = (posData || []).map(p => ({
+            ...p,
+            total_elapsed_days: calculateElapsedDays(p.open_date, p.completion_date)
+          }));
+          const { data: statData, error: statError } = await supabase.from('hiring_stats').select('settings_json').eq('id', 1).single();
+          if (statError && statError.code !== 'PGRST116') throw statError;
+          set({ 
+            positions: enhancedPositions, 
+            sortedPositions: sortPositions(enhancedPositions),
+            hiringStats: statData ? statData.settings_json : emptyHiringStats
+          });
+        } catch (error) {
+          console.error('fetch error:', error);
+        }
+      },
 
-  const [favorites, setFavorites] = useState<Set<string>>(() => {
-    const stored = localStorage.getItem('favorites');
-    return stored ? new Set(JSON.parse(stored)) : new Set<string>();
-  });
+      updateHiringStats: async (stats) => {
+        try {
+          const { error } = await supabase.from('hiring_stats').upsert({ id: 1, settings_json: stats });
+          if (error) throw error;
+          set({ hiringStats: stats });
+        } catch (error) {
+          console.error('updateHiringStats error:', error);
+          alert('save failed');
+        }
+      },
 
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+      login: (password) => {
+        if (password === ADMIN_PASSWORD) {
+          set({ isAuthenticated: true });
+          return true;
+        }
+        return false;
+      },
 
-  // 정렬된 포지션 (메모이제이션)
-  const sortedPositions = useMemo(() => sortPositions(positions), [positions]);
+      logout: () => set({ isAuthenticated: false }),
 
-  const updateHiringStats = useCallback((stats: HiringStats) => {
-    setHiringStats(stats);
-    localStorage.setItem('hiringStats', JSON.stringify(stats));
-  }, []);
+      addPosition: async (pos) => {
+        try {
+          const { error } = await supabase.from('positions').insert({
+            id: pos.id, company: pos.company, team: pos.team,
+            department: pos.department, position_title: pos.position_title,
+            employment_type: pos.employment_type, headcount: pos.headcount,
+            current_stage: pos.current_stage, open_date: pos.open_date,
+            completion_date: pos.completion_date, is_active: pos.is_active,
+            job_family: pos.job_family, target_days: pos.target_days,
+            days_in_stage: pos.days_in_stage
+          });
+          if (error) throw error;
+          const posWithDays = { ...pos, total_elapsed_days: calculateElapsedDays(pos.open_date, pos.completion_date) };
+          set((state) => {
+            const updated = [...state.positions, posWithDays];
+            return { positions: updated, sortedPositions: sortPositions(updated) };
+          });
+        } catch (error) {
+          console.error('addPosition error:', error);
+          alert('add failed');
+        }
+      },
 
-  const login = useCallback((password: string): boolean => {
-    if (password === ADMIN_PASSWORD) { setIsAuthenticated(true); return true; }
-    return false;
-  }, []);
+      updatePosition: async (id, partial) => {
+        try {
+          const dbColumns = ['company','team','department','position_title','employment_type',
+            'headcount','current_stage','open_date','completion_date','is_active',
+            'job_family','target_days','days_in_stage'];
+          const dbPayload: any = {};
+          for (const key of dbColumns) {
+            if (key in partial) dbPayload[key] = (partial as any)[key];
+          }
+          const { error } = await supabase.from('positions').update(dbPayload).eq('id', id);
+          if (error) throw error;
+          set((state) => {
+            const updated = state.positions.map(p => {
+              if (p.id === id) {
+                const newP = { ...p, ...partial };
+                newP.total_elapsed_days = calculateElapsedDays(newP.open_date, newP.completion_date);
+                return newP;
+              }
+              return p;
+            });
+            return { positions: updated, sortedPositions: sortPositions(updated) };
+          });
+        } catch (error) {
+          console.error('updatePosition error:', error);
+          alert('update failed');
+        }
+      },
 
-  const logout = useCallback(() => setIsAuthenticated(false), []);
+      deletePosition: async (id) => {
+        try {
+          const { error } = await supabase.from('positions').delete().eq('id', id);
+          if (error) throw error;
+          set((state) => {
+            const updated = state.positions.filter(p => p.id !== id);
+            const nextFavorites = new Set(state.favorites);
+            nextFavorites.delete(id);
+            return { positions: updated, sortedPositions: sortPositions(updated), favorites: nextFavorites };
+          });
+        } catch (error) {
+          console.error('deletePosition error:', error);
+          alert('delete failed');
+        }
+      },
 
-  const addPosition = useCallback((pos: Position) => {
-    setPositions(prev => {
-      const updated = [...prev, pos];
-      localStorage.setItem('positions', JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
+      toggleFavorite: (id) => set((state) => {
+        const next = new Set(state.favorites);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return { favorites: next };
+      }),
+    }),
+    {
+      name: 'recruitment-admin-storage',
+      partialize: (state) => ({
+        favorites: Array.from(state.favorites),
+        hiringStats: state.hiringStats,
+        positions: state.positions
+      }),
+      merge: (persistedState: any, currentState) => {
+        const mergedPositions = persistedState?.positions || currentState.positions;
+        return {
+          ...currentState,
+          ...persistedState,
+          positions: mergedPositions,
+          sortedPositions: sortPositions(mergedPositions),
+          favorites: new Set(persistedState?.favorites || []),
+        };
+      },
+    }
+  )
+);
 
-  const updatePosition = useCallback((id: string, partial: Partial<Position>) => {
-    setPositions(prev => {
-      const updated = prev.map(p => p.id === id ? { ...p, ...partial } : p);
-      localStorage.setItem('positions', JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
-
-  const deletePosition = useCallback((id: string) => {
-    setPositions(prev => {
-      const updated = prev.filter(p => p.id !== id);
-      localStorage.setItem('positions', JSON.stringify(updated));
-      return updated;
-    });
-    // 즐겨찾기에서도 제거
-    setFavorites(prev => {
-      const next = new Set(prev);
-      next.delete(id);
-      localStorage.setItem('favorites', JSON.stringify([...next]));
-      return next;
-    });
-  }, []);
-
-  const toggleFavorite = useCallback((id: string) => {
-    setFavorites(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      localStorage.setItem('favorites', JSON.stringify([...next]));
-      return next;
-    });
-  }, []);
-
-  return (
-    <AdminContext.Provider value={{
-      hiringStats, updateHiringStats,
-      isAuthenticated, login, logout,
-      positions, sortedPositions, addPosition, updatePosition, deletePosition,
-      favorites, toggleFavorite,
-    }}>
-      {children}
-    </AdminContext.Provider>
-  );
-}
-
-export function useAdmin(): AdminState {
-  const context = useContext(AdminContext);
-  if (!context) throw new Error('useAdmin must be used within AdminProvider');
-  return context;
-}
-
-export const STAGE_ORDER: StageType[] = ['접수', '서류검토', '1차면접', '2차면접', '최종면접', '처우협의', '입사확정'];
-export const COMPANIES: Company[] = ['GC케어', 'GC메디아이'];
-export const JD_STATUSES: JDStatus[] = ['미작성', '작성중', '검토중', '완료'];
+export const STAGE_ORDER: StageType[] = ['\uC811\uC218','\uC11C\uB958\uAC80\uD1A0','1\uCC28\uBA74\uC811','2\uCC28\uBA74\uC811','\uCC98\uC6B0\uD611\uC758','\uC785\uC0AC\uD655\uC815','\uCC44\uC6A9\uC644\uB8CC'];
+export const COMPANIES: Company[] = ['GC\uCF00\uC5B4','GC\uBA54\uB514\uC544\uC774'];
+export const JD_STATUSES: JDStatus[] = ['\uBBF8\uC791\uC131','\uC791\uC131\uC911','\uAC80\uD1A0\uC911','\uC644\uB8CC'];
