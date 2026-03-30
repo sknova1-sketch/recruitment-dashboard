@@ -1,8 +1,8 @@
 // === 채용 단계별 포지션 분포 차트 ===
-// BCG/맥킨지 스타일: 넉넉한 카드 패딩, 높이 확대, 세련된 헤더
+// BCG/맥킨지 스타일: 넓녁한 카드 패딩, 높이 확대, 세련된 헤더
 
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import { StageDistribution } from '../../types';
 
@@ -10,17 +10,8 @@ interface StageDistributionChartProps {
   data: StageDistribution[];
 }
 
-const STAGE_COLORS: Record<string, string> = {
-  '접수': '#8B5CF6',
-  '서류검토': '#7C3AED',
-  '1차면접': '#6366F1',
-  '2차면접': '#4F46E5',
-  '최종면접': '#4338CA',
-  '처우협의': '#3B82F6',
-  '입사확정': '#10B981',
-};
 
-// 커스텀 툴팁 - 호버 시 상세 정보 표시
+// 커스텀 툴팀 - 호버 시 상세 정보 표시
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
