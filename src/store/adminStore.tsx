@@ -70,11 +70,6 @@ function calculateStatsFromPositions(positions: Position[]): HiringStats {
   return stats;
 }
 
-const emptyHiringStats: HiringStats = {
-  gcCare: { fulltime: 0, contract: 0, intern: 0, total: 0 },
-  gcMediai: { fulltime: 0, contract: 0, intern: 0, total: 0 },
-  totalFulltime: 0, totalContract: 0, totalIntern: 0, grandTotal: 0,
-};
 
 export const useAdmin = create<AdminState>()(
   persist(
@@ -231,7 +226,7 @@ export const useAdmin = create<AdminState>()(
       }),
     }),
     {
-      name: 'recruitment-admin-storage',
+      name: 'recruitment-admin-storage-v2',
       // 로컬에는 '즐겨찾기' 및 초기 렌더링용 '캐시'만 저장
       partialize: (state) => ({
         favorites: Array.from(state.favorites), 
