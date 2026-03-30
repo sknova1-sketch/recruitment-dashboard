@@ -65,7 +65,7 @@ export const positions: Position[] = [
     hiring_manager: '이영희',
     request_date: '2026-01-15',
     open_date: '2026-01-20',
-    current_stage: '최종면접', // 임원면접 -> 최종면접
+    current_stage: '2차면접', // 최종면접 삭제 대응 (2차면접으로 변경)
     days_in_stage: 6,
     total_elapsed_days: 35,
     target_days: 40,

@@ -26,15 +26,16 @@ interface AdminState {
   favorites: Set<string>;
   toggleFavorite: (id: string) => void;
   sortedPositions: Position[];
-  fetchSupabaseData: () => Promise<void>;
+  fetchSupabaseData: () => Promise<void>; // 데이터 통신 시작점 추가
   dashboardSearch: string;
   setDashboardSearch: (s: string) => void;
 }
 
 const ADMIN_PASSWORD = '1111';
 
+// 포지션 정렬 로직
 function sortPositions(positions: Position[]): Position[] {
-  return [...positions].sort((a: Position, b: Position) => {
+  return [...positions].sort((a, b) => {
     if (a.company !== b.company) return a.company.localeCompare(b.company);
     const dateA = a.open_date || '9999-12-31';
     const dateB = b.open_date || '9999-12-31';
@@ -44,6 +45,7 @@ function sortPositions(positions: Position[]): Position[] {
   });
 }
 
+// 초기 빈 데이터 세팅 (로딩 딜레이 대비)
 const emptyHiringStats: HiringStats = {
   gcCare: { fulltime: 0, contract: 0, intern: 0, total: 0 },
   gcMediai: { fulltime: 0, contract: 0, intern: 0, total: 0 },
@@ -53,103 +55,151 @@ const emptyHiringStats: HiringStats = {
 export const useAdmin = create<AdminState>()(
   persist(
     (set) => ({
-      hiringStats: emptyHiringStats,
+      hiringStats: emptyHiringStats, // 최초 로드 시 빈 데이터 사용 (로컬 캐시 혹은 DB Fetch가 곧바로 덮어씀)
       isAuthenticated: false,
       positions: [],
       sortedPositions: [],
       favorites: new Set<string>(),
       dashboardSearch: '',
-      setDashboardSearch: (s: string) => set({ dashboardSearch: s }),
+      setDashboardSearch: (s) => set({ dashboardSearch: s }),
 
+      // Supabase 데이터베이스 패치 
       fetchSupabaseData: async () => {
         try {
+          // 1. 포지션 정보 가져오기 (가져올 때 경과일 동적 재계산)
           const { data: posData, error: posError } = await supabase.from('positions').select('*');
           if (posError) throw posError;
-          const enhancedPositions = (posData || []).map((p: Position) => ({
+          const enhancedPositions = (posData || []).map(p => ({
             ...p,
             total_elapsed_days: calculateElapsedDays(p.open_date, p.completion_date)
           }));
+
+          // 2. 통계 정보 가져오기
           const { data: statData, error: statError } = await supabase.from('hiring_stats').select('settings_json').eq('id', 1).single();
-          if (statError && statError.code !== 'PGRST116') throw statError;
-          set({ positions: enhancedPositions, sortedPositions: sortPositions(enhancedPositions),
-            hiringStats: statData ? statData.settings_json : emptyHiringStats });
-        } catch (error) { console.error('fetch error:', error); }
+          if (statError && statError.code !== 'PGRST116') throw statError; // PGRST116: no rows
+
+          set({ 
+            positions: enhancedPositions, 
+            sortedPositions: sortPositions(enhancedPositions),
+            hiringStats: statData ? statData.settings_json : emptyHiringStats
+          });
+        } catch (error) {
+          console.error("데이터 초기화 중 에러 발생:", error);
+        }
       },
 
-      updateHiringStats: async (stats: HiringStats) => {
+      updateHiringStats: async (stats) => {
         try {
+          // DB 업데이트
           const { error } = await supabase.from('hiring_stats').upsert({ id: 1, settings_json: stats });
           if (error) throw error;
+          // Local 업데이트
           set({ hiringStats: stats });
-        } catch (error) { console.error('update stats error:', error); alert('save failed'); }
+        } catch (error) {
+          console.error("통계 업데이트 에러:", error);
+          alert("저장 실패!");
+        }
       },
 
-      login: (password: string) => {
-        if (password === ADMIN_PASSWORD) { set({ isAuthenticated: true }); return true; }
+      login: (password) => {
+        if (password === ADMIN_PASSWORD) {
+          set({ isAuthenticated: true });
+          return true;
+        }
         return false;
       },
 
       logout: () => set({ isAuthenticated: false }),
 
-      addPosition: async (pos: Position) => {
+      addPosition: async (pos) => {
         try {
           const { error } = await supabase.from('positions').insert({
-            id: pos.id, company: pos.company, team: pos.team,
-            department: pos.department, position_title: pos.position_title,
-            employment_type: pos.employment_type, headcount: pos.headcount,
-            current_stage: pos.current_stage, open_date: pos.open_date,
-            completion_date: pos.completion_date, is_active: pos.is_active,
-            job_family: pos.job_family, target_days: pos.target_days,
+            id: pos.id,
+            company: pos.company,
+            team: pos.team,
+            department: pos.department,
+            position_title: pos.position_title,
+            employment_type: pos.employment_type,
+            headcount: pos.headcount,
+            current_stage: pos.current_stage,
+            open_date: pos.open_date,
+            completion_date: pos.completion_date,
+            is_active: pos.is_active,
+            job_family: pos.job_family,
+            target_days: pos.target_days,
             days_in_stage: pos.days_in_stage
           });
           if (error) throw error;
+          
+          // 로컬에도 계산된 일수를 즉시 반영
           const posWithDays = { ...pos, total_elapsed_days: calculateElapsedDays(pos.open_date, pos.completion_date) };
-          set((state: AdminState) => {
+          set((state) => {
             const updated = [...state.positions, posWithDays];
             return { positions: updated, sortedPositions: sortPositions(updated) };
           });
-        } catch (error) { console.error('add error:', error); alert('add failed'); }
+        } catch (error) {
+           console.error("포지션 추가 에러:", error);
+           alert("포지션 추가 실패");
+        }
       },
 
-      updatePosition: async (id: string, partial: Partial<Position>) => {
-        try {
-          const dbColumns = ['company','team','department','position_title','employment_type',
-            'headcount','current_stage','open_date','completion_date','is_active',
-            'job_family','target_days','days_in_stage'];
-          const dbPayload: Record<string, unknown> = {};
-          for (const key of dbColumns) {
-            if (key in partial) dbPayload[key] = (partial as Record<string, unknown>)[key];
-          }
-          const { error } = await supabase.from('positions').update(dbPayload).eq('id', id);
-          if (error) throw error;
-          set((state: AdminState) => {
-            const updated = state.positions.map((p: Position) => {
-              if (p.id === id) {
-                const newP = { ...p, ...partial };
-                newP.total_elapsed_days = calculateElapsedDays(newP.open_date, newP.completion_date);
-                return newP;
-              }
-              return p;
-            });
-            return { positions: updated, sortedPositions: sortPositions(updated) };
-          });
-        } catch (error) { console.error('update error:', error); alert('update failed'); }
+      updatePosition: async (id, partial) => {
+         try {
+           // DB에 존재하는 실제 컬럼만 필터링해서 업데이트 요청
+           const dbColumns = [
+             'company', 'team', 'department', 'position_title', 'employment_type', 
+             'headcount', 'current_stage', 'open_date', 'completion_date', 'is_active', 
+             'job_family', 'target_days', 'days_in_stage'
+           ];
+           const dbPayload: any = {};
+           for (const key of dbColumns) {
+             if (key in partial) {
+               dbPayload[key] = (partial as any)[key];
+             }
+           }
+           
+           const { error } = await supabase.from('positions').update(dbPayload).eq('id', id);
+           if (error) throw error;
+
+           set((state) => {
+             const updated = state.positions.map(p => {
+               if (p.id === id) {
+                 const newP = { ...p, ...partial };
+                 newP.total_elapsed_days = calculateElapsedDays(newP.open_date, newP.completion_date);
+                 return newP;
+               }
+               return p;
+             });
+             return { positions: updated, sortedPositions: sortPositions(updated) };
+           });
+         } catch (error) {
+           console.error("포지션 수정 에러:", error);
+           alert("포지션 수정 실패");
+         }
       },
 
-      deletePosition: async (id: string) => {
-        try {
-          const { error } = await supabase.from('positions').delete().eq('id', id);
-          if (error) throw error;
-          set((state: AdminState) => {
-            const updated = state.positions.filter((p: Position) => p.id !== id);
-            const nextFav = new Set(state.favorites);
-            nextFav.delete(id);
-            return { positions: updated, sortedPositions: sortPositions(updated), favorites: nextFav };
-          });
-        } catch (error) { console.error('delete error:', error); alert('delete failed'); }
+      deletePosition: async (id) => {
+         try {
+           const { error } = await supabase.from('positions').delete().eq('id', id);
+           if (error) throw error;
+           
+           set((state) => {
+             const updated = state.positions.filter(p => p.id !== id);
+             const nextFavorites = new Set(state.favorites);
+             nextFavorites.delete(id);
+             return {
+               positions: updated,
+               sortedPositions: sortPositions(updated),
+               favorites: nextFavorites
+             };
+           });
+         } catch (error) {
+           console.error("포지션 삭제 에러:", error);
+           alert("포지션 삭제 실패");
+         }
       },
 
-      toggleFavorite: (id: string) => set((state: AdminState) => {
+      toggleFavorite: (id) => set((state) => {
         const next = new Set(state.favorites);
         if (next.has(id)) next.delete(id);
         else next.add(id);
@@ -158,25 +208,26 @@ export const useAdmin = create<AdminState>()(
     }),
     {
       name: 'recruitment-admin-storage',
-      partialize: (state: AdminState) => ({
-        favorites: Array.from(state.favorites),
+      // 로컬에는 '즐겨찾기' 및 초기 렌더링용 '캐시'만 저장
+      partialize: (state) => ({
+        favorites: Array.from(state.favorites), 
         hiringStats: state.hiringStats,
         positions: state.positions
       }),
-      merge: (persistedState: Partial<AdminState>, currentState: AdminState) => {
-        const mergedPositions = (persistedState as any)?.positions || currentState.positions;
+      merge: (persistedState: any, currentState) => {
+        const mergedPositions = persistedState?.positions || currentState.positions;
         return {
           ...currentState,
           ...persistedState,
           positions: mergedPositions,
           sortedPositions: sortPositions(mergedPositions),
-          favorites: new Set((persistedState as any)?.favorites || []),
+          favorites: new Set(persistedState?.favorites || []),
         };
       },
     }
   )
 );
 
-export const STAGE_ORDER: StageType[] = ['\uC811\uC218','\uC11C\uB958\uAC80\uD1A0','1\uCC28\uBA74\uC811','2\uCC28\uBA74\uC811','\uCC98\uC6B0\uD611\uC758','\uC785\uC0AC\uD655\uC815','\uCC44\uC6A9\uC644\uB8CC'];
-export const COMPANIES: Company[] = ['GC\uCF00\uC5B4','GC\uBA54\uB514\uC544\uC774'];
-export const JD_STATUSES: JDStatus[] = ['\uBBF8\uC791\uC131','\uC791\uC131\uC911','\uAC80\uD1A0\uC911','\uC644\uB8CC'];
+export const STAGE_ORDER: StageType[] = ['접수', '서류검토', '1차면접', '2차면접', '처우협의', '입사확정', '채용완료'];
+export const COMPANIES: Company[] = ['GC케어', 'GC메디아이'];
+export const JD_STATUSES: JDStatus[] = ['미작성', '작성중', '검토중', '완료'];

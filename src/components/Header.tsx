@@ -44,12 +44,12 @@ export default function Header({ onSearch, searchValue, currentPage, onNavigate 
           {/* 중앙: 스위치 토글 (배경 고정, 흔들림 없음) */}
           <div className="flex-1 flex justify-center">
             <div className="bg-gray-100 rounded-full p-1 flex items-center" style={{ width: '320px' }}>
-              {/* 대시보드 버튼 */}
+              {/* 대시보드 버튼 - AI 도우미와 완전히 동일한 보라색 글로우 이펙트 적용 */}
               <button
                 onClick={() => onNavigate('dashboard')}
-                className={`rounded-full py-2.5 text-[13px] font-semibold transition-all duration-300 ${
+                className={`rounded-full py-2.5 text-[13px] font-semibold transition-all duration-300 relative z-10 ${
                   currentPage === 'dashboard'
-                    ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/50 relative z-10'
+                    ? 'bg-white text-gray-900 shadow-[0_0_15px_rgba(139,92,246,0.25)] ring-1 ring-violet-200'
                     : 'bg-transparent text-gray-400 hover:text-gray-600'
                 }`}
                 style={{ width: '156px' }}
@@ -80,8 +80,7 @@ export default function Header({ onSearch, searchValue, currentPage, onNavigate 
                   type="text"
                   value={searchValue || ''}
                   onChange={(e) => onSearch(e.target.value)}
-                  placeholder="직접검색..."
-                  className="pl-9 pr-4 py-2.5 w-40 bg-gray-50 text-gray-700 placeholder:text-gray-300 rounded-xl text-[13px] border border-gray-100 outline-none focus:bg-white focus:ring-2 focus:ring-gray-200 transition-all"
+                  className="pl-[44px] pr-4 py-2.5 w-[170px] bg-gray-50 text-gray-700 placeholder:text-gray-300 rounded-xl text-[13px] border border-gray-100 outline-none focus:bg-white focus:ring-2 focus:ring-gray-200 transition-all"
                 />
               </div>
             )}

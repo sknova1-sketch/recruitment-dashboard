@@ -1,5 +1,9 @@
 // === 앱 루트 ===
+<<<<<<< HEAD
 // ErrorBoundary로 앱 전체를 감주서 크래시를 방지합니다.
+=======
+// ErrorBoundary로 앱 전체를 감싸서 크래시를 방지합니다.
+>>>>>>> 84f8f2b (fix: resolve TypeScript build errors & update AdminModal)
 
 import { useState, useEffect } from 'react';
 import Dashboard from './pages/Dashboard';

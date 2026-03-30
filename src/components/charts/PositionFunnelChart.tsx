@@ -2,7 +2,6 @@
 // 요청 #4: 하단 건수 사이 퍼센트 전환율 배지 모두 삭제
 
 import { useMemo } from 'react';
-import { SlidersHorizontal } from 'lucide-react';
 
 export interface FunnelData {
   stage: string;
@@ -83,11 +82,6 @@ export default function PositionFunnelChart({ data }: PositionFunnelChartProps) 
           <h3 className="text-[16px] font-bold text-gray-900 tracking-tight">채용 단계 퍼널</h3>
           <p className="text-[12px] text-gray-400 mt-0.5 font-medium">현재 활성화된 포지션 기준</p>
         </div>
-        
-        <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-50 border border-gray-100 text-[13px] font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors">
-          <SlidersHorizontal className="w-4 h-4" />
-          상세 필터
-        </button>
       </div>
 
       <div className="relative w-full pt-2 pb-4">

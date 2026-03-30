@@ -148,6 +148,7 @@ export default function Dashboard({ currentPage, onNavigate }: DashboardProps) {
               positions={
                 allFilteredPositions
                   .filter(p => p.current_stage === '입사확정' || p.current_stage === '채용완료')
+                  // DB에 별도 완료일이 없으므로, 현재는 오픈일자를 기준으로 최신순 정렬
                   .sort((a, b) => (b.open_date || '').localeCompare(a.open_date || ''))
               }
               onSelectPosition={setSelectedPosition}

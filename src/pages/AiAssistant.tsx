@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { PageType } from '../App';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { useAdmin } from '../store/adminStore';
 import { Calculator, FileText, Sparkles, CalendarIcon, Info, RefreshCw } from 'lucide-react';
 
 interface AiAssistantProps {
@@ -222,7 +223,14 @@ ${roleLines.length ? `\n${roleName} 포지션은 ` + roleLines.slice(0, 2).join(
   return (
     <div className="min-h-screen bg-[#F0F2F5] flex flex-col items-center w-full">
       <div className="w-full max-w-[1500px]">
-        <Header currentPage={currentPage} onNavigate={onNavigate} />
+        <Header 
+          currentPage={currentPage} 
+          onNavigate={onNavigate} 
+          onSearch={(v) => {
+            useAdmin.getState().setDashboardSearch(v);
+          }}
+          searchValue={useAdmin(s => s.dashboardSearch)} 
+        />
       </div>
 
       <main className="w-full max-w-[1500px] mx-auto px-6 py-10 flex flex-col items-center">

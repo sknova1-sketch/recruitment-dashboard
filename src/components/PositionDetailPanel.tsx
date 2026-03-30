@@ -66,8 +66,8 @@ export default function PositionDetailPanel({ position, onClose }: PositionDetai
               <h3 className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-8 border-l-4 border-gray-900 pl-3">Recruitment Progress</h3>
               <div className="space-y-6 relative pl-4">
                 <div className="absolute left-[19px] top-2 bottom-2 w-0.5 bg-gray-100" />
-                {['접수', '서류검토', '1차면접', '2차면접', '최종면접', '처우협의', '입사확정'].map((stage, idx) => {
-                  const stageOrder = ['접수', '서류검토', '1차면접', '2차면접', '최종면접', '처우협의', '입사확정'];
+                {['접수', '서류검토', '1차면접', '2차면접', '처우협의', '입사확정', '채용완료'].map((stage, idx) => {
+                  const stageOrder = ['접수', '서류검토', '1차면접', '2차면접', '처우협의', '입사확정', '채용완료'];
                   const currentIdx = stageOrder.indexOf(position.current_stage);
                   const isCurrent = position.current_stage === stage;
                   const isPast = currentIdx > idx;

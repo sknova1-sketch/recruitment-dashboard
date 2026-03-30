@@ -13,9 +13,12 @@ export const useFilter = (allPositions: Position[]) => {
   const [filter, setFilter] = useState<FilterState>(initialFilter);
   const [showOnlyActive, setShowOnlyActive] = useState(true);
 
+  // 전체 필터링된 목록 (활성/비활성 모두 포함)
   const allFilteredPositions = useMemo(() => {
     let result = allPositions;
-    if (filter.company !== '\uC804\uCCB4') {
+
+    // 회사 필터
+    if (filter.company !== '전체') {
       result = result.filter(p => p.company === filter.company);
     }
     if (filter.stage !== '\uC804\uCCB4') {
@@ -24,6 +27,8 @@ export const useFilter = (allPositions: Position[]) => {
     if (filter.status !== '\uC804\uCCB4') {
       result = result.filter(p => p.status_flag === filter.status);
     }
+
+    // 검색어 필터
     if (filter.search.trim()) {
       const keyword = filter.search.toLowerCase();
       result = result.filter(p =>
@@ -34,7 +39,7 @@ export const useFilter = (allPositions: Position[]) => {
     }
     return result;
   }, [allPositions, filter]);
-
+  // 활성 전용 필터링 목록 (KPI 집계 및 진행 중 리스트용)
   const filteredPositions = useMemo(() => {
     return getActivePositions(allFilteredPositions);
   }, [allFilteredPositions]);

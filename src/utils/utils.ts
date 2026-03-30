@@ -5,12 +5,21 @@ import { Position, KPIData, StageType, StageDistribution, DurationData, JobFamil
 
 /** 모든 채용 단계 순서 (파이프라인 순) */
 export const STAGE_ORDER: StageType[] = [
-  '접수', '서류검토', '1차면접', '2차면접', '최종면접', '처우협의', '입사확정', '채용완료'
+  '접수', '서류검토', '1차면접', '2차면접', '처우협의', '입사확정', '채용완료'
 ];
 
-/** 활성 포지션만 필터링 */
+/** 활성 포지션만 필터링 (입사확정/채용완료 제외) */
 export const getActivePositions = (positions: Position[]): Position[] =>
-  positions.filter(p => p.is_active);
+  positions.filter(p => p.is_active && p.current_stage !== '입사확정' && p.current_stage !== '채용완료');
+
+/** 오픈일과 확정일(없으면 오늘)을 기준으로 경과일 계산 */
+export const calculateElapsedDays = (openDate: string, completionDate?: string | null): number => {
+  if (!openDate) return 0;
+  const start = new Date(openDate).getTime();
+  const end = completionDate ? new Date(completionDate).getTime() : new Date().getTime();
+  const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24));
+  return Math.max(0, diffDays);
+};
 
 /** KPI 데이터 계산 */
 export const calculateKPI = (positions: Position[]): KPIData => {

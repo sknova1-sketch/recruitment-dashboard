@@ -2,7 +2,11 @@
 // Antigravity 스타일: 순백 뉴모픽 카드, 가로 배치
 // 업그레이드: 지연 건수·평균 경과일·이번달 통계 추가
 
+<<<<<<< HEAD
 import { Briefcase, Building2, AlertTriangle, Clock, TrendingUp, CheckCircle2 } from 'lucide-react';
+=======
+import { Briefcase, Building2 } from 'lucide-react';
+>>>>>>> 84f8f2b (fix: resolve TypeScript build errors & update AdminModal)
 import { KPIData, Company } from '../types';
 
 interface KPICardsProps {
@@ -82,6 +86,7 @@ export default function KPICards({ kpi, onCardClick, selectedCompany = '전체' 
   ];
 
   return (
+<<<<<<< HEAD
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {cards.map((card, index) => {
@@ -133,6 +138,35 @@ export default function KPICards({ kpi, onCardClick, selectedCompany = '전체' 
           </div>
         ))}
       </div>
+=======
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      {cards.map((card, index) => {
+        const isSelected = selectedCompany === card.id;
+        return (
+          <div
+            key={card.label}
+            onClick={() => onCardClick?.(card.id)}
+            className={`neu-card px-7 py-6 flex items-center justify-between fade-in cursor-pointer transition-all duration-300 ${
+              isSelected 
+                ? 'shadow-[0_0_15px_rgba(139,92,246,0.25)] ring-1 ring-violet-200 bg-white' 
+                : 'hover:bg-gray-50/50'
+            }`}
+            style={{ animationDelay: `${index * 0.05}s` }}
+          >
+            <div className="space-y-1">
+              <p className={`text-[14px] font-bold tracking-tight transition-colors ${isSelected ? 'text-violet-600' : 'text-gray-900'}`}>{card.label}</p>
+              <p className="text-[12px] text-gray-400 font-medium">{card.subLabel}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className={`text-[36px] font-black tracking-tighter leading-none transition-colors ${isSelected ? 'text-violet-600' : 'text-gray-900'}`}>{card.value}</span>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${isSelected ? 'bg-violet-50 border-violet-100' : 'bg-gray-50 border-gray-100'}`}>
+                {isSelected ? <div className="text-violet-500">{card.icon}</div> : card.icon}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+>>>>>>> 84f8f2b (fix: resolve TypeScript build errors & update AdminModal)
     </div>
   );
 }
