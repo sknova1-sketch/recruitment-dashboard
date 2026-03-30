@@ -7,7 +7,6 @@ export type StageType =
   | '서류검토'
   | '1차면접'
   | '2차면접'
-  | '최종면접'
   | '처우협의'
   | '입사확정'
   | '채용완료';
@@ -44,6 +43,7 @@ export interface Position {
   hiring_manager: string;
   request_date: string;
   open_date: string;
+  completion_date?: string | null;
   current_stage: StageType;
   days_in_stage: number;
   total_elapsed_days: number;
