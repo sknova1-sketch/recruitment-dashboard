@@ -2,17 +2,16 @@
 // 업그레이드: 채용 건강도 점수 게이지 추가, 정보 밀도 개선
 
 import { useState } from 'react';
-import { MessageSquareText, Activity } from 'lucide-react';
+import { MessageSquareText } from 'lucide-react';
 import { useAdmin } from '../store/adminStore';
 import FeedbackModal from './FeedbackModal';
-import { calculateHealthScore, getHealthLabel } from '../utils/utils';
 
 interface StatusSummaryPanelProps {
   totalActive: number;
 }
 
 export default function StatusSummaryPanel({ totalActive }: StatusSummaryPanelProps) {
-  const { hiringStats, sortedPositions } = useAdmin();
+  const { hiringStats } = useAdmin();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   // 신호등 상태 결정 (총 활성 포지션 건수 기준)
@@ -37,16 +36,6 @@ export default function StatusSummaryPanel({ totalActive }: StatusSummaryPanelPr
 
   const status = getStatus(totalActive);
 
-  // 건강도 점수 계산
-  const healthScore = calculateHealthScore(sortedPositions);
-  const { label: healthLabel, color: healthColor } = getHealthLabel(healthScore);
-
-  // 게이지 SVG 파라미터
-  const radius = 36;
-  const circumference = 2 * Math.PI * radius;
-  const dashOffset = circumference * (1 - healthScore / 100);
-  const gaugeColor =
-    healthScore >= 80 ? '#10b981' : healthScore >= 60 ? '#f59e0b' : '#ef4444';
 
   return (
     <>
@@ -76,53 +65,6 @@ export default function StatusSummaryPanel({ totalActive }: StatusSummaryPanelPr
           </p>
         </div>
 
-        {/* 채용 건강도 점수 카드 */}
-        <div className="neu-card p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Activity className="w-4 h-4 text-gray-400" />
-            <h4 className="text-[14px] font-bold text-gray-900 tracking-tight">채용 건강도</h4>
-          </div>
-          <div className="flex items-center gap-5">
-            {/* SVG 게이지 */}
-            <div className="relative flex-shrink-0">
-              <svg width="90" height="90" className="-rotate-90">
-                {/* 배경 트랙 */}
-                <circle
-                  cx="45"
-                  cy="45"
-                  r={radius}
-                  fill="none"
-                  stroke="#f3f4f6"
-                  strokeWidth="8"
-                />
-                {/* 진행 게이지 */}
-                <circle
-                  cx="45"
-                  cy="45"
-                  r={radius}
-                  fill="none"
-                  stroke={gaugeColor}
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={dashOffset}
-                  style={{ transition: 'stroke-dashoffset 1s ease' }}
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-[20px] font-black text-gray-900 leading-none">{healthScore}</span>
-                <span className="text-[10px] text-gray-400 font-medium">/ 100</span>
-              </div>
-            </div>
-            {/* 설명 */}
-            <div>
-              <p className={`text-[18px] font-black ${healthColor}`}>{healthLabel}</p>
-              <p className="text-[11px] text-gray-400 font-medium mt-1 leading-relaxed">
-                정상 포지션 비중 기준으로<br />채용 파이프라인 건강도를<br />산출합니다.
-              </p>
-            </div>
-          </div>
-        </div>
 
         {/* 채용 프로세스 개선 의견 (클릭 시 50% 크기 새 창) */}
         <div
