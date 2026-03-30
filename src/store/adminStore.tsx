@@ -91,6 +91,9 @@ export const useAdmin = create<AdminState>()(
           if (posError) throw posError;
           const enhancedPositions = (posData || []).map(p => ({
             ...p,
+            update_logs: p.update_logs || [],
+            days_in_stage: p.days_in_stage || 0,
+            target_days: p.target_days || 45,
             total_elapsed_days: calculateElapsedDays(p.open_date, p.completion_date)
           }));
 
@@ -133,7 +136,8 @@ export const useAdmin = create<AdminState>()(
             is_active: p.is_active,
             job_family: p.job_family,
             target_days: p.target_days,
-            days_in_stage: p.days_in_stage
+            days_in_stage: p.days_in_stage,
+            update_logs: p.update_logs || []
           })));
           if (insError) throw insError;
 
@@ -188,7 +192,8 @@ export const useAdmin = create<AdminState>()(
             is_active: pos.is_active,
             job_family: pos.job_family,
             target_days: pos.target_days,
-            days_in_stage: pos.days_in_stage
+            days_in_stage: pos.days_in_stage,
+            update_logs: []
           });
           if (error) throw error;
           
