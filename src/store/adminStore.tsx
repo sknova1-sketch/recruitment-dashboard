@@ -137,6 +137,15 @@ export const useAdmin = create<AdminState>()(
             job_family: p.job_family,
             target_days: p.target_days,
             days_in_stage: p.days_in_stage,
+            hiring_manager: p.hiring_manager,
+            request_date: p.request_date,
+            status_flag: p.status_flag,
+            applicant_count: p.applicant_count,
+            interview_count: p.interview_count,
+            offer_count: p.offer_count,
+            jd_status: p.jd_status,
+            posting_url: p.posting_url,
+            jd_url: p.jd_url,
             update_logs: p.update_logs || []
           })));
           if (insError) throw insError;
@@ -193,6 +202,15 @@ export const useAdmin = create<AdminState>()(
             job_family: pos.job_family,
             target_days: pos.target_days,
             days_in_stage: pos.days_in_stage,
+            hiring_manager: pos.hiring_manager || '',
+            request_date: pos.request_date || pos.open_date,
+            status_flag: pos.status_flag || '정상',
+            applicant_count: pos.applicant_count || 0,
+            interview_count: pos.interview_count || 0,
+            offer_count: pos.offer_count || 0,
+            jd_status: pos.jd_status || '미작성',
+            posting_url: pos.posting_url || '',
+            jd_url: pos.jd_url || '',
             update_logs: []
           });
           if (error) throw error;
