@@ -108,9 +108,27 @@ export default function AiAssistant({ currentPage, onNavigate }: AiAssistantProp
   const handleGenerate = async () => {
     if (!jdTitle.trim()) return;
     setJdLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    setJdResult(buildJD(jdTitle, jdTeam, jdDept, jdEmpType, jdResp, jdReq));
-    setJdLoading(false);
+    try {
+      const res = await fetch('/api/generate-jd', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: jdTitle,
+          team: jdTeam,
+          dept: jdDept,
+          empType: jdEmpType,
+          resp: jdResp,
+          reqText: jdReq,
+        })
+      });
+      const data = await res.json();
+      if (data.jd) setJdResult(data.jd);
+      else setJdResult(data.error || '생성에 실패했습니다. 다시 시도해주세요.');
+    } catch {
+      setJdResult('서버 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setJdLoading(false);
+    }
   };
 
   const handleCopy = () => {
@@ -212,7 +230,7 @@ export default function AiAssistant({ currentPage, onNavigate }: AiAssistantProp
               <div>
                 <label className={labelCls}>주요 담당 업무</label>
                 <textarea value={jdResp} onChange={e => setJdResp(e.target.value)} rows={3}
-                  placeholder={"한 줄에 하나씩 작성하세요\n예: 채용 프로세스 기획 및 운영\n    온보딩 프로그램 설계"}
+                  placeholder={"한 줄에 하나씩 작성하세요\n예: 채용 씄로세스 기획 및 운영\n    온보딩 프로그램 설계"}
                   className={`${inputCls} focus:ring-violet-400 resize-none leading-relaxed`} />
               </div>
 
@@ -254,11 +272,11 @@ export default function AiAssistant({ currentPage, onNavigate }: AiAssistantProp
                   </pre>
                 </div>
               </div>
-            )}
+                          }
           </div>
 
           {/* ═══ RIGHT: 채용 소요일 계산기 ═══ */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+v className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
 
             {/* 카드 헤더 */}
             <div className="px-6 py-5 border-b border-gray-100">
