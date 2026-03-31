@@ -29,9 +29,7 @@ export default function KPICards({ kpi, onCardClick, selectedCompany = '전체' 
       value: kpi.gcCareCount,
       subLabel: '활성 채용 중',
       icon: <Building2 className="w-6 h-6 text-gray-400" />,
-      badge: kpi.newThisMonth > 0
-        ? { text: `이번달 신규 ${kpi.newThisMonth}건`, color: 'bg-blue-50 text-blue-500 border border-blue-100' }
-        : null,
+      badge: null,
     },
     {
       id: 'GC메디아이' as const,
@@ -39,14 +37,7 @@ export default function KPICards({ kpi, onCardClick, selectedCompany = '전체' 
       value: kpi.gcMediaiCount,
       subLabel: '활성 채용 중',
       icon: <Building2 className="w-6 h-6 text-gray-400" />,
-      badge: kpi.avgElapsedDays > 0
-        ? {
-            text: `평균 ${kpi.avgElapsedDays}일 소요`,
-            color: kpi.avgElapsedDays > 30
-              ? 'bg-amber-50 text-amber-600 border border-amber-100'
-              : 'bg-emerald-50 text-emerald-600 border border-emerald-100',
-          }
-        : null,
+      badge: null,
     },
   ];
 

@@ -27,13 +27,14 @@ export const calculateKPI = (positions: Position[]): KPIData => {
   const gcCare = active.filter(p => p.company === 'GC케어');
   const gcMediai = active.filter(p => p.company === 'GC메디아이');
 
-  // 평균 채용 소요기간 (활성 + 완료된 모든 포지션 기준)
-  const avgElapsedDays = positions.length > 0
-    ? Math.round(positions.reduce((sum, p) => sum + (p.total_elapsed_days || 0), 0) / positions.length)
+  // 평균 채용 소요기간 (완료된 포지션 기준)
+  const closed = positions.filter(p => !p.is_active);
+  const avgElapsedDays = closed.length > 0
+    ? Math.round(closed.reduce((sum, p) => sum + (p.total_elapsed_days || 0), 0) / closed.length)
     : 0;
 
-  // 지연 포지션 수
-  const delayedCount = active.filter(p => p.status_flag === '지연').length;
+  // 지연 포지션 수 (목표일 대비 경과일 초과 기준)
+  const delayedCount = active.filter(p => (p.total_elapsed_days || 0) > (p.target_days || 45)).length;
 
   // 이번 달(2026년 3월) 기준 신규 오픈 및 채용 완료
   const thisMonth = '2026-03';
