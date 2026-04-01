@@ -362,3 +362,4 @@ export default function AiAssistant({ currentPage, onNavigate }: AiAssistantProp
     </div>
   );
 }
+

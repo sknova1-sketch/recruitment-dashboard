@@ -307,7 +307,7 @@ function PositionForm({ initial, onSave, onCancel }: {
     if (!team.trim() || !title.trim()) return;
     const data = {
       ...(initial || {
-        id: `rypto.randomUUID()`,
+id: crypto.randomUUID(),
         job_family: '개발' as const,
         hiring_manager: '',
         request_date: new Date().toISOString().split('T')[0],
